@@ -162,6 +162,7 @@ struct Dwfl_Module
 
   char *name;			/* Iterator name for this module.  */
   GElf_Addr low_addr, high_addr;
+  pid_t pid;			/* Used for /proc/PID/mem reading.  */
 
   struct dwfl_file main, debug, aux_sym;
   GElf_Addr main_bias;
@@ -608,6 +609,16 @@ extern Dwfl_Error __libdw_open_file (int *fdp, Elf **elfp,
 				     bool close_on_fail, bool archive_ok)
   internal_function;
 
+/* Call __libdw_open_file but the ELF file starts in *FDP at START_OFFSET and
+   has length MAXIMUM_SIZE.  __libdw_open_file defaults to 0 and ~((size_t) 0)
+   respectively.  */
+extern Dwfl_Error __libdw_open_file_at_offset (int *fdp, Elf **elfp,
+					       off_t start_offset,
+					       size_t maximum_size,
+					       bool close_on_fail,
+					       bool archive_ok)
+  internal_function;
+
 /* Fetch PT_DYNAMIC P_VADDR from ELF and store it to *VADDRP.  Return success.
    *VADDRP is not modified if the function fails.  */
 extern bool __libdwfl_dynamic_vaddr_get (Elf *elf, GElf_Addr *vaddrp)
@@ -744,6 +755,7 @@ INTDECL (dwfl_getthread_frames)
 INTDECL (dwfl_getthreads)
 INTDECL (dwfl_thread_getframes)
 INTDECL (dwfl_frame_pc)
+INTDECL (dwfl_report_module_pid)
 
 /* Leading arguments standard to callbacks passed a Dwfl_Module.  */
 #define MODCB_ARGS(mod)	(mod), &(mod)->userdata, (mod)->name, (mod)->low_addr

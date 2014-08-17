@@ -30,6 +30,8 @@ backends: Add CFI unwinding for arm. Relies on .debug_frame.
 other: All separate elfutils-robustify patches have been merged.
        CVE-2014-0172 Check overflow before calling malloc to uncompress data.
 
+libelf: New function elf_begin_at_offset.
+
 Version 0.158
 
 libdwfl: dwfl_core_file_report has new parameter executable.

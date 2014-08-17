@@ -35,7 +35,8 @@
 #include "../libelf/libelfP.h"
 
 static inline Dwfl_Error
-open_elf_file (Elf **elf, int *fd, char **name)
+open_elf_file_at_offset (Elf **elf, int *fd, char **name,
+			 off_t start_offset, size_t maximum_size)
 {
   if (*elf == NULL)
     {
@@ -51,7 +52,8 @@ open_elf_file (Elf **elf, int *fd, char **name)
       if (*fd < 0)
 	return CBFAIL;
 
-      return __libdw_open_file (fd, elf, true, false);
+      return __libdw_open_file_at_offset (fd, elf, start_offset, maximum_size,
+					  true, false);
     }
   else if (unlikely (elf_kind (*elf) != ELF_K_ELF))
     {
@@ -71,7 +73,19 @@ open_elf_file (Elf **elf, int *fd, char **name)
 static inline Dwfl_Error
 open_elf (Dwfl_Module *mod, struct dwfl_file *file)
 {
-  Dwfl_Error error = open_elf_file (&file->elf, &file->fd, &file->name);
+  off_t start_offset = 0;
+  size_t maximum_size = ~(size_t) 0;
+  if (mod->pid != 0 && file == &mod->main)
+    {
+      if (asprintf (&file->name, "/proc/%d/mem", mod->pid) < 0)
+	return CBFAIL;
+      start_offset = mod->low_addr;
+      maximum_size = mod->high_addr - mod->low_addr;
+    }
+
+  Dwfl_Error error = open_elf_file_at_offset (&file->elf, &file->fd,
+					      &file->name,
+					      start_offset, maximum_size);
   if (error != DWFL_E_NOERROR)
     return error;
 
@@ -537,8 +551,8 @@ find_debug_altlink (Dwfl_Module *mod, const char *filename)
 	 because they open the Elf anyway for sanity checking.
 	 Otherwise open either the given file name or use the fd
 	 returned.  */
-      Dwfl_Error error = open_elf_file (&mod->alt_elf, &mod->alt_fd,
-					&altfile);
+      Dwfl_Error error = open_elf_file_at_offset (&mod->alt_elf, &mod->alt_fd,
+						  &altfile, 0, ~(size_t) 0);
       if (error == DWFL_E_NOERROR)
 	{
 	  mod->alt = INTUSE(dwarf_begin_elf) (mod->alt_elf,

@@ -1008,10 +1008,8 @@ write_file (int fd, Elf_Cmd cmd)
 
 /* Return a descriptor for the file belonging to FILDES.  */
 Elf *
-elf_begin (fildes, cmd, ref)
-     int fildes;
-     Elf_Cmd cmd;
-     Elf *ref;
+elf_begin_at_offset (int fildes, Elf_Cmd cmd, Elf *ref, off_t start_offset,
+		     size_t maximum_size)
 {
   Elf *retval;
 
@@ -1068,7 +1066,7 @@ elf_begin (fildes, cmd, ref)
 	retval = lock_dup_elf ();
       else
 	/* Create descriptor for existing file.  */
-	retval = read_file (fildes, 0, ~((size_t) 0), cmd, NULL);
+	retval = read_file (fildes, start_offset, maximum_size, cmd, NULL);
       break;
 
     case ELF_C_RDWR:
@@ -1090,7 +1088,7 @@ elf_begin (fildes, cmd, ref)
 	}
       else
 	/* Create descriptor for existing file.  */
-	retval = read_file (fildes, 0, ~((size_t) 0), cmd, NULL);
+	retval = read_file (fildes, start_offset, maximum_size, cmd, NULL);
       break;
 
     case ELF_C_WRITE:
@@ -1110,5 +1108,15 @@ elf_begin (fildes, cmd, ref)
     rwlock_unlock (ref->lock);
 
   return retval;
+}
+INTDEF(elf_begin_at_offset)
+
+Elf *
+elf_begin (fildes, cmd, ref)
+     int fildes;
+     Elf_Cmd cmd;
+     Elf *ref;
+{
+  return elf_begin_at_offset (fildes, cmd, ref, 0, ~((size_t) 0));
 }
 INTDEF(elf_begin)
