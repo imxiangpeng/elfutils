@@ -259,13 +259,15 @@ read_8sbyte_unaligned_1 (bool other_byte_order, const void *p)
 
 
 #define read_ubyte_unaligned_inc(Nbytes, Dbg, Addr) \
-  ((Nbytes) == 2 ? read_2ubyte_unaligned_inc (Dbg, Addr)		      \
-   : (Nbytes) == 4 ? read_4ubyte_unaligned_inc (Dbg, Addr)		      \
+  ((Nbytes) == 1 ? (uint8_t) *Addr++					\
+   : (Nbytes) == 2 ? read_2ubyte_unaligned_inc (Dbg, Addr)		\
+   : (Nbytes) == 4 ? read_4ubyte_unaligned_inc (Dbg, Addr)		\
    : read_8ubyte_unaligned_inc (Dbg, Addr))
 
 #define read_sbyte_unaligned_inc(Nbytes, Dbg, Addr) \
-  ((Nbytes) == 2 ? read_2sbyte_unaligned_inc (Dbg, Addr)		      \
-   : (Nbytes) == 4 ? read_4sbyte_unaligned_inc (Dbg, Addr)		      \
+  ((Nbytes) == 1 ? (int8_t) *Addr++					\
+   : (Nbytes) == 2 ? read_2sbyte_unaligned_inc (Dbg, Addr)		\
+   : (Nbytes) == 4 ? read_4sbyte_unaligned_inc (Dbg, Addr)		\
    : read_8sbyte_unaligned_inc (Dbg, Addr))
 
 #endif	/* memory-access.h */
