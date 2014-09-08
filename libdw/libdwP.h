@@ -343,6 +343,9 @@ typedef struct
   /* Offset of .debug_macro section.  */
   Dwarf_Off offset;
 
+  /* Offset of associated .debug_line section.  */
+  Dwarf_Off line_offset;
+
   /* How far have we read in this section.  This starts as 0 and is
      increased as the section is worked through.  */
   Dwarf_Off read;
@@ -364,9 +367,10 @@ typedef struct
 
 struct Dwarf_Macro_s
 {
+  Dwarf_Off line_offset;
+  Dwarf_Word nargs;
   uint16_t version;
   uint8_t opcode;
-  Dwarf_Word nargs;
   Dwarf_Attribute *attributes;
 };
 

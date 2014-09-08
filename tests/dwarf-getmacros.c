@@ -1,4 +1,4 @@
-/* Test program for dwfl_module_return_value_location.
+/* Test program for dwarf_getmacros and related
    Copyright (C) 2009 Red Hat, Inc.
    This file is part of elfutils.
 

@@ -82,25 +82,6 @@ macro_op_compare (const void *p1, const void *p2)
   return 0;
 }
 
-__attribute__ ((unused)) static void
-dumptab (Dwarf_Macro_Op_Table *table)
-{
-  fprintf(stderr, "---\noffset=%#lx\n", table->offset);
-  fprintf(stderr, "header_len=%u\n", table->header_len);
-  fprintf(stderr, "is_64bit=%d\n", table->is_64bit);
-  for (unsigned i = 1; i < 256; ++i)
-    {
-      unsigned idx = table->opcodes[i - 1];
-      if (idx != 0xff)
-	{
-	  fprintf(stderr, "opcode %u is allocated to %u [", i, idx);
-	  for (unsigned j = 0; j < table->table[idx].nforms; ++j)
-	    fprintf(stderr, " %#x", table->table[idx].forms[j]);
-	  fprintf(stderr, " ]\n");
-	}
-    }
-}
-
 static void
 build_table (Dwarf_Macro_Op_Table *table,
 	     Dwarf_Macro_Op_Proto op_protos[static 255])
@@ -108,13 +89,7 @@ build_table (Dwarf_Macro_Op_Table *table,
   unsigned ct = 0;
   for (unsigned i = 1; i < 256; ++i)
     if (op_protos[i - 1].forms != NULL)
-      {
-	fprintf(stderr, "opcode %u allocated to %u [", i, ct);
-	for (unsigned j = 0; j < op_protos[i - 1].nforms; ++j)
-	  fprintf(stderr, " %#x", op_protos[i - 1].forms[j]);
-	fprintf(stderr, " ]\n");
-	table->table[table->opcodes[i - 1] = ct++] = op_protos[i - 1];
-      }
+      table->table[table->opcodes[i - 1] = ct++] = op_protos[i - 1];
     else
       table->opcodes[i] = 0xff;
 }
@@ -180,13 +155,11 @@ get_table_for_offset (Dwarf *dbg, Dwarf_Word macoff,
 
   bool is_64bit = (flags & 0x1) != 0;
 
-  Dwarf_Word line_offset = 0;
+  Dwarf_Off line_offset = (Dwarf_Off) -1;
   if ((flags & 0x2) != 0
       && ! ck_read_ubyte_unaligned_inc (is_64bit ? 8 : 4, dbg,
 					readp, endp, line_offset))
     return NULL;
-
-  fprintf (stderr, "line_offset=%" PRIx64 "\n", line_offset);
 
   /* """The macinfo entry types defined in this standard may, but
      might not, be described in the table""".  I.e. we have to assume
@@ -249,6 +222,7 @@ get_table_for_offset (Dwarf *dbg, Dwarf_Word macoff,
 
   *table = (Dwarf_Macro_Op_Table) {
     .offset = macoff,
+    .line_offset = line_offset,
     .header_len = readp - startp,
     .version = version,
     .is_64bit = is_64bit,
@@ -295,8 +269,6 @@ read_macros (Dwarf *dbg, Dwarf_Macro_Op_Table *table,
 	     const unsigned char *endp,
 	     int (*callback) (Dwarf_Macro *, void *), void *arg)
 {
-  //dumptab (table);
-
   while (readp < endp)
     {
       unsigned int opcode = *readp++;
@@ -304,9 +276,7 @@ read_macros (Dwarf *dbg, Dwarf_Macro_Op_Table *table,
 	/* Nothing more to do.  */
 	return 0;
 
-      //fprintf (stderr, "opcode: %u\n", opcode);
       unsigned int idx = table->opcodes[opcode - 1];
-      //fprintf (stderr, "idx: %u\n", idx);
       if (idx == 0xff)
 	{
 	  __libdw_seterrno (DWARF_E_INVALID_OPCODE);
@@ -350,6 +320,7 @@ read_macros (Dwarf *dbg, Dwarf_Macro_Op_Table *table,
 	}
 
       Dwarf_Macro macro = {
+	.line_offset = table->line_offset,
 	.version = table->version,
 	.opcode = opcode,
 	.nargs = proto->nforms,
@@ -359,7 +330,6 @@ read_macros (Dwarf *dbg, Dwarf_Macro_Op_Table *table,
       Dwarf_Off nread = readp - startp;
       if (nread > table->read)
 	table->read = nread;
-      //fprintf(stderr, "table->read=%#lx\n", table->read);
 
       if (callback (&macro, arg) != DWARF_CB_OK)
 	return (ptrdiff_t) (uintptr_t) readp;
@@ -424,6 +394,25 @@ dwarf_getmacros_addr (Dwarf *dbg, Dwarf_Off offset,
 		      callback, arg);
 }
 
+static Elf_Data *
+old_style_data (Dwarf_Die *cudie)
+{
+  if (unlikely (! dwarf_hasattr (cudie, DW_AT_macro_info)))
+    {
+      __libdw_seterrno (DWARF_E_NO_ENTRY);
+      return NULL;
+    }
+
+  Elf_Data *d = cudie->cu->dbg->sectiondata[IDX_debug_macinfo];
+  if (unlikely (d == NULL) || unlikely (d->d_buf == NULL))
+    {
+      __libdw_seterrno (DWARF_E_NO_ENTRY);
+      return NULL;
+    }
+
+  return d;
+}
+
 ptrdiff_t
 dwarf_getmacros_die (Dwarf_Die *cudie,
 		     int (*callback) (Dwarf_Macro *, void *),
@@ -443,18 +432,9 @@ dwarf_getmacros_die (Dwarf_Die *cudie,
       return dwarf_getmacros_addr (cudie->cu->dbg, macoff, callback, arg);
     }
 
-  if (unlikely (! dwarf_hasattr (cudie, DW_AT_macro_info)))
-    {
-      __libdw_seterrno (DWARF_E_NO_ENTRY);
-      return -1;
-    }
-
-  Elf_Data *d = cudie->cu->dbg->sectiondata[IDX_debug_macinfo];
-  if (unlikely (d == NULL) || unlikely (d->d_buf == NULL))
-    {
-      __libdw_seterrno (DWARF_E_NO_ENTRY);
-      return -1;
-    }
+  Elf_Data *d = old_style_data (cudie);
+  if (d == NULL)
+    return -1;
 
   Dwarf_Word macoff;
   if (get_offset_from (cudie, DW_AT_macro_info, &macoff) != 0)
@@ -478,6 +458,17 @@ dwarf_getmacros (die, callback, arg, offset)
   if (die == NULL)
     return -1;
 
+  /* We can't support .debug_macro transparently by dwarf_getmacros,
+     because extant callers would think that the returned macro
+     opcodes come from DW_MACINFO_* domain and be confused.
+
+     N.B. DIE's with both DW_AT_GNU_macros and DW_AT_macro_info are
+     disallowed by the proposal that DW_AT_GNU_macros support is based on.  */
+  if (unlikely (old_style_data (die) == NULL))
+    return -1;
+
+  /* But having filtered out cases of missing old-style data, we can
+     safely piggy-back on existing new-style interfaces.  */
   if (offset == 0)
     return dwarf_getmacros_die (die, callback, arg);
   else
