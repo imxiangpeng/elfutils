@@ -310,6 +310,8 @@ ELFUTILS_0.160 {
 
 ELFUTILS_0.161 {
   global:
+    dwarf_getmacros_die;
+    dwarf_getmacros_off;
     dwarf_macro_version;
     dwarf_macro_getparamcnt;
     dwarf_macro_param;

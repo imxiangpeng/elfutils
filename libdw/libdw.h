@@ -827,42 +827,46 @@ extern int dwarf_entry_breakpoints (Dwarf_Die *die, Dwarf_Addr **bkpts);
 
 
 /* Call callback function for each of the macro information entry for
-   the CU.  This only works for .debug_macinfo style macro entries
-   (those where dwarf_macro_version returns 0.)  */
+   the CU.  Similar in operation to dwarf_getmacros_die, but only
+   works for .debug_macinfo style macro entries (those where
+   dwarf_macro_version returns 0.)  */
 extern ptrdiff_t dwarf_getmacros (Dwarf_Die *cudie,
 				  int (*callback) (Dwarf_Macro *, void *),
-				  void *arg, ptrdiff_t offset)
+				  void *arg, ptrdiff_t token)
      __nonnull_attribute__ (2);
 
 /* Iterate through the macro section referenced by CUDIE and call
    CALLBACK for each macro information entry.  Keeps iterating while
    CALLBACK returns DWARF_CB_OK.  If the callback returns
-   DWARF_CB_ABORT, it stops iterating and returns a token, which can
-   later be passed to dwarf_getmacros_next to restart the iteration at
-   the point where it stopped.  Returns -1 for errors.  */
-extern ptrdiff_t dwarf_getmacros_die (Dwarf_Die *cudie,
+   DWARF_CB_ABORT, it stops iterating and returns a continuation
+   token, which can be used to restart the iteration at the point
+   where it ended.  Returns -1 for errors or 0 if there are no more
+   macro entries.
+
+   If MACOFFP is non-NULL, offset to macro section referenced by CUDIE
+   is stored to *MACOFFP.  That can later be passed together with a
+   continuation token to dwarf_getmacros_off.
+
+   If this is called with non-0 TOKEN (i.e. it is a continuation
+   call), MACOFFP shall be either NULL, or point to a location that
+   contains the same section offset as was at *MACOFFP of the call
+   that the passed-in continuation token came from.  */
+extern ptrdiff_t dwarf_getmacros_die (Dwarf_Die *cudie, Dwarf_Off *macoffp,
 				      int (*callback) (Dwarf_Macro *, void *),
-				      void *arg)
-     __nonnull_attribute__ (2);
+				      void *arg, ptrdiff_t token)
+     __nonnull_attribute__ (3);
 
-/* This is similar in operation to dwarf_getmacros_die, but iterates
-   always through .debug_macro, and selects the section to iterate
-   through by offset instead of by CU.  This is used for handling
-   DW_MACRO_GNU_transparent_include's or similar opcodes.  The
-   returned token can again be passed to dwarf_getmacros_next.  */
-extern ptrdiff_t dwarf_getmacros_addr (Dwarf *dbg, Dwarf_Off offset,
-				       int (*callback) (Dwarf_Macro *, void *),
-				       void *arg)
+/* This is similar in operation to dwarf_getmacros_die, but selects
+   the section to iterate through by offset instead of by CU.  This
+   can be used for handling DW_MACRO_GNU_transparent_include's or
+   similar opcodes, or for continuation calls seeded with MACOFF and
+   TOKEN that came back from dwarf_getmacros_die (or a previous call
+   to dwarf_getmacros_off).  Note that with TOKEN of 0, this will
+   always iterate through DW_AT_GNU_macros style section.  */
+extern ptrdiff_t dwarf_getmacros_off (Dwarf *dbg, Dwarf_Off macoff,
+				      int (*callback) (Dwarf_Macro *, void *),
+				      void *arg, ptrdiff_t token)
   __nonnull_attribute__ (3);
-
-/* Continue in iteration through a macro section.  Use the token
-   returned from dwarf_getmacros_die, dwarf_getmacros_addr or a
-   previous invocation of dwarf_getmacros_next to continue the
-   iteration.  Returns -1 for errors.  */
-extern ptrdiff_t dwarf_getmacros_next (Dwarf *dbg,
-				       int (*callback) (Dwarf_Macro *, void *),
-				       void *arg, ptrdiff_t offset)
-  __nonnull_attribute__ (2);
 
 /* Return Dwarf version of this macro opcode.  The versions are 0 for
    macro elements coming from DW_AT_macro_info, and 4 for macro
@@ -902,7 +906,6 @@ extern int dwarf_macro_getparamcnt (Dwarf_Macro *macro, size_t *paramcntp);
    meaningful for pseudo-attributes formed this way.  */
 extern int dwarf_macro_param (Dwarf_Macro *macro, size_t idx,
 			      Dwarf_Attribute *attribute);
-
 
 /* Return first macro parameter.  This will return -1 if the parameter
    is not an integral value.  Use dwarf_macro_param for more general
