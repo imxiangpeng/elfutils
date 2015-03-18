@@ -141,6 +141,11 @@ check_PROGRAMS += $(asm_TESTS)
 TESTS += $(asm_TESTS)
 endif
 
+if HAVE_CXX
+check_PROGRAMS += test-iterators
+TESTS += run-test-iterators.sh
+endif
+
 EXTRA_DIST = run-arextract.sh run-arsymtest.sh \
 	     run-show-die-info.sh run-get-files.sh run-get-lines.sh \
 	     run-get-pubnames.sh run-get-aranges.sh \
@@ -286,7 +291,7 @@ EXTRA_DIST = run-arextract.sh run-arsymtest.sh \
 	     testfile-sizes3.o.bz2 \
 	     run-readelf-A.sh testfileppc32attrs.o.bz2 \
 	     testfile-debug-types.bz2 \
-	     run-getsrc-die.sh run-strptr.sh
+	     run-getsrc-die.sh run-strptr.sh run-test-iterators.sh
 
 if USE_VALGRIND
 valgrind_cmd='valgrind -q --error-exitcode=1 --run-libc-freeres=no'
@@ -431,6 +436,8 @@ getsrc_die_LDADD = $(libdw) $(libelf)
 strptr_LDADD = $(libelf)
 newdata_LDADD = $(libelf)
 elfstrtab_LDADD = $(libelf)
+test_iterators_SOURCES = test-iterators.cc
+test_iterators_LDADD = $(libdw) $(libelf)
 
 if GCOV
 check: check-am coverage

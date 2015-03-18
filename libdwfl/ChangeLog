@@ -1,3 +1,9 @@
+2015-03-17  Petr Machata  <pmachata@redhat.com>
+
+	* c++: New directory.
+	* c++/libdwfl: New header file.
+	* Makefile.am: Install it.
+
 2015-01-26  Mark Wielaard  <mjw@redhat.com>
 
 	* dwfl_module_getdwarf.c (find_symtab): Explicitly clear symdata,

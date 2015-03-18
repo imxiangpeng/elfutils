@@ -2,7 +2,7 @@
 ##
 ## Process this file with automake to create Makefile.in
 ##
-## Copyright (C) 2005-2010, 2013 Red Hat, Inc.
+## Copyright (C) 2005-2010, 2013, 2015 Red Hat, Inc.
 ## This file is part of elfutils.
 ##
 ## This file is free software; you can redistribute it and/or modify
@@ -37,7 +37,7 @@ VERSION = 1
 noinst_LIBRARIES = libdwfl.a
 noinst_LIBRARIES += libdwfl_pic.a
 
-pkginclude_HEADERS = libdwfl.h
+pkginclude_HEADERS = libdwfl.h c++/libdwfl
 
 libdwfl_a_SOURCES = dwfl_begin.c dwfl_end.c dwfl_error.c dwfl_version.c \
 		    dwfl_module.c dwfl_report_elf.c relocate.c \

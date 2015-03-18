@@ -1,6 +1,7 @@
 Version 0.162
 
-libdw: Install new header elfutils/known-dwarf.h.
+libdw: Install new headers elfutils/known-dwarf.h, libdw.
+libdwfl: Install new header libdwfl.
 
 Version 0.161
 

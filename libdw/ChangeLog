@@ -7,6 +7,12 @@
 	of white-listing valid tags.
 	* dwarf_getsrclines.c (dwarf_getsrclines.c): Likewise.
 
+2015-03-17  Petr Machata  <pmachata@redhat.com>
+
+	* c++: New directory.
+	* c++/libdw: New header file.
+	* Makefile.am: Install it.
+
 2015-03-18  Petr Machata  <pmachata@redhat.com>
 
 	* Makefile.am (pkginclude_HEADERS): Add known-dwarf.h.

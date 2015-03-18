@@ -1,0 +1,626 @@
+/* -*-c++-*-
+   Copyright (C) 2009, 2010, 2011, 2012, 2014, 2015 Red Hat, Inc.
+   This file is part of elfutils.
+
+   This file is free software; you can redistribute it and/or modify
+   it under the terms of either
+
+     * the GNU Lesser General Public License as published by the Free
+       Software Foundation; either version 3 of the License, or (at
+       your option) any later version
+
+   or
+
+     * the GNU General Public License as published by the Free
+       Software Foundation; either version 2 of the License, or (at
+       your option) any later version
+
+   or both in parallel, as here.
+
+   elfutils is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received copies of the GNU General Public License and
+   the GNU Lesser General Public License along with this program.  If
+   not, see <http://www.gnu.org/licenses/>.  */
+
+#ifndef _LIBDW_CPP
+#define _LIBDW_CPP	1
+
+#include <vector>
+#include <cassert>
+#include <algorithm>
+#include <stdexcept>
+
+#include <elfutils/libdw.h>
+#include <dwarf.h>
+
+namespace elfutils
+{
+  // Helper functions.  Not for client consumption.
+  namespace libdw_impl
+  {
+    inline void throw_libdw (int dwerr = 0);
+    inline bool dwpp_child (Dwarf_Die &die, Dwarf_Die &result);
+    inline bool dwpp_siblingof (Dwarf_Die &die, Dwarf_Die &result);
+    inline Dwarf_Die dwpp_offdie (Dwarf *dbg, Dwarf_Off offset);
+    inline Dwarf_Die dwpp_offdie_types (Dwarf *dbg, Dwarf_Off offset);
+  }
+
+  // The iterators presented here have operators * and -> as non-const
+  // member functions.  The reason is that the libdw interfaces do not
+  // take, say, Dwarf_Die const *, but Dwarf_Die *, and therefore
+  // returning a const reference of some sort would not be useful.  We
+  // don't want to give out copies either, as that adds unnecessary
+  // overhead.  And we simply don't care much if anyone does end up
+  // changing the internal copy of the current CU, DIE, or whatever.
+
+
+  // An iterator that goes over compile units (full or partial) in a
+  // given DWARF file.  The type that it points to (yields on
+  // dereference) is CU_INFO (see below).
+  //
+  // Example usage:
+  // {
+  //   std::vector <Dwarf_Off> v
+  //   for (elfutils::cu_iterator jt (dw);
+  //        jt != elfutils::cu_iterator::end (); ++jt)
+  //     v.push_back (dwarf_dieoffset (&jt->cudie));
+  // }
+  class unit_iterator;
+
+  // Helper structure with data about each compile unit.
+  struct unit_info
+  {
+    Dwarf_Die cudie;
+    Dwarf_Off abbrev_offset;
+    uint64_t type_signature; // Valid for DW_TAG_type_unit
+    Dwarf_Half version;
+    uint8_t address_size;
+    uint8_t offset_size;
+  };
+
+  class unit_iterator
+    : public std::iterator <std::input_iterator_tag, unit_info>
+  {
+    friend class die_tree_iterator;
+    Dwarf *m_dw;
+    Dwarf_Off m_offset;
+    Dwarf_Off m_old_offset;
+    unit_info m_info;
+    bool m_types;
+
+    explicit unit_iterator (Dwarf_Off off, bool types)
+      : m_dw (NULL)
+      , m_offset (off)
+      , m_old_offset (0)
+      , m_types (types)
+    {}
+
+    void
+    move ()
+    {
+      assert (*this != end ());
+      m_old_offset = m_offset;
+      size_t hsize;
+      int rc = dwarf_next_unit (m_dw, m_offset, &m_offset, &hsize,
+				&m_info.version, &m_info.abbrev_offset,
+				&m_info.address_size, &m_info.offset_size,
+				m_types ? &m_info.type_signature : NULL, NULL);
+      if (rc < 0)
+	elfutils::libdw_impl::throw_libdw ();
+
+      if (rc != 0 && m_types)
+	done ();
+      else if (rc != 0)
+	{
+	  m_types = true;
+	  m_offset = 0;
+	  m_old_offset = 0;
+	  move ();
+	}
+      else
+	m_info.cudie = (m_types
+			? elfutils::libdw_impl::dwpp_offdie_types
+			: elfutils::libdw_impl::dwpp_offdie)
+	  (m_dw, m_old_offset + hsize);
+    }
+
+    void
+    done ()
+    {
+      *this = end ();
+    }
+
+  public:
+    explicit unit_iterator (Dwarf *dw)
+      : m_dw (dw)
+      , m_offset (0)
+      , m_old_offset (0)
+      , m_types (false)
+    {
+      move ();
+    }
+
+    // Construct a CU iterator for DW such that it points to a compile
+    // unit represented by CUDIE.
+    unit_iterator (Dwarf *dw, Dwarf_Die cudie)
+      : m_dw (dw)
+      , m_offset (dwarf_dieoffset (&cudie) - dwarf_cuoffset (&cudie))
+      , m_old_offset (0)
+      , m_types (dwarf_tag (&cudie) == DW_TAG_type_unit)
+    {
+      move ();
+    }
+
+    unit_iterator (unit_iterator const &that)
+      : m_dw (that.m_dw)
+      , m_offset (that.m_offset)
+      , m_old_offset (that.m_old_offset)
+      , m_info (that.m_info)
+      , m_types (that.m_types)
+    {}
+
+    // Return a unit_iterator pointing one after the last actual CU.
+    static unit_iterator
+    end ()
+    {
+      return unit_iterator ((Dwarf_Off) -1, true);
+    }
+
+    bool
+    operator== (unit_iterator const &that) const
+    {
+      return m_types == that.m_types && m_offset == that.m_offset;
+    }
+
+    bool
+    operator!= (unit_iterator const &that) const
+    {
+      return ! (*this == that);
+    }
+
+    unit_iterator
+    operator++ ()
+    {
+      move ();
+      return *this;
+    }
+
+    unit_iterator
+    operator++ (int)
+    {
+      unit_iterator tmp = *this;
+      ++*this;
+      return tmp;
+    }
+
+    Dwarf_Off
+    offset () const
+    {
+      return m_old_offset;
+    }
+
+    // N.B. see top of the file for explanation of non-constness of
+    // operators * and ->.
+
+    unit_info &
+    operator* ()
+    {
+      return m_info;
+    }
+
+    unit_info *
+    operator-> ()
+    {
+      return &**this;
+    }
+  };
+
+  // An iterator that goes through children of a given DIE.
+  // Example usage:
+  // {
+  //    size_t nchildren = std::distance (elfutils::child_iterator (type_die),
+  //                                      elfutils::child_iterator::end ());
+  // }
+
+  class child_iterator
+    : public std::iterator <std::input_iterator_tag, Dwarf_Die>
+  {
+    Dwarf_Die m_die;
+
+    child_iterator ()
+      : m_die ({.addr = (void *) -1})
+    {}
+
+  public:
+    explicit child_iterator (Dwarf_Die parent)
+    {
+      if (! elfutils::libdw_impl::dwpp_child (parent, m_die))
+	*this = end ();
+    }
+
+    child_iterator (child_iterator const &that)
+      : m_die (that.m_die)
+    {}
+
+    // Return a child_iterator pointing one after the last actual
+    // child.
+    static child_iterator
+    end ()
+    {
+      return child_iterator ();
+    }
+
+    bool
+    operator== (child_iterator const &that) const
+    {
+      return m_die.addr == that.m_die.addr;
+    }
+
+    bool
+    operator!= (child_iterator const &that) const
+    {
+      return ! (*this == that);
+    }
+
+    child_iterator
+    operator++ ()
+    {
+      assert (*this != end ());
+      if (! elfutils::libdw_impl::dwpp_siblingof (m_die, m_die))
+	*this = end ();
+      return *this;
+    }
+
+    child_iterator
+    operator++ (int)
+    {
+      child_iterator ret = *this;
+      ++*this;
+      return ret;
+    }
+
+    // N.B. see top of the file for explanation of non-constness of
+    // operators * and ->.
+
+    Dwarf_Die &
+    operator* ()
+    {
+      assert (*this != end ());
+      return m_die;
+    }
+
+    Dwarf_Die *
+    operator-> ()
+    {
+      return &**this;
+    }
+  };
+
+  // Tree flattening iterator.  It pre-order iterates all DIEs in
+  // given DWARF file, optionally starting from a given CU iterator.
+  // It keeps track of path from CU root to the current DIE, and that
+  // can be requested through stack() member function.
+  //
+  // Example usage:
+  // {
+  //   for (elfutils::die_tree_iterator it (dw);
+  //        it != elfutils::die_tree_iterator::end (); ++it)
+  //     {
+  //       typedef elfutils::die_tree_iterator::stack_type stack_type;
+  //       stack_type const &stack = it.stack ();
+  //       for (stack_type::const_iterator jt = stack.begin ();
+  //            jt != stack.end (); ++jt)
+  //         ...;
+  //     }
+  // }
+  class die_tree_iterator
+    : public std::iterator <std::input_iterator_tag, Dwarf_Die>
+  {
+  public:
+    typedef std::vector <Dwarf_Die> stack_type;
+
+  private:
+    unit_iterator m_cuit;
+    // Internally, only offsets are kept on the stack.
+    std::vector <Dwarf_Off> m_stack;
+    Dwarf_Die m_die;
+
+    die_tree_iterator (Dwarf_Off offset)
+      : m_cuit (unit_iterator::end ())
+    {}
+
+  public:
+    explicit die_tree_iterator (Dwarf *dw)
+      : die_tree_iterator (unit_iterator (dw))
+    {}
+
+    explicit die_tree_iterator (unit_iterator const &cuit)
+      : m_cuit (cuit)
+      , m_die (m_cuit->cudie)
+    {}
+
+    die_tree_iterator (die_tree_iterator const &that)
+      : m_cuit (that.m_cuit)
+      , m_stack (that.m_stack)
+      , m_die (that.m_die)
+    {}
+
+    // Return a die_tree_iterator pointing one after the last actual
+    // DIE.
+    static die_tree_iterator
+    end ()
+    {
+      return die_tree_iterator ((Dwarf_Off) -1);
+    }
+
+    bool
+    operator== (die_tree_iterator const &that) const
+    {
+      return m_cuit == that.m_cuit
+	&& m_stack == that.m_stack
+	&& (m_cuit == unit_iterator::end ()
+	    || m_die.addr == that.m_die.addr);
+    }
+
+    bool
+    operator!= (die_tree_iterator const &that) const
+    {
+      return ! (*this == that);
+    }
+
+    die_tree_iterator
+    operator++ ()
+    {
+      Dwarf_Die child;
+      if (elfutils::libdw_impl::dwpp_child (m_die, child))
+	{
+	  m_stack.push_back (dwarf_dieoffset (&m_die));
+	  m_die = child;
+	  return *this;
+	}
+
+      do
+	if (elfutils::libdw_impl::dwpp_siblingof (m_die, m_die))
+	  return *this;
+	else
+	  // No sibling found.  Go a level up and retry, unless this
+	  // was a sole, childless CU DIE.
+	  if (! m_stack.empty ())
+	    {
+	      m_die = elfutils::libdw_impl::dwpp_offdie (m_cuit.m_dw,
+							 m_stack.back ());
+	      m_stack.pop_back ();
+	    }
+      while (! m_stack.empty ());
+
+      m_die = (++m_cuit)->cudie;
+      return *this;
+    }
+
+    die_tree_iterator
+    operator++ (int)
+    {
+      die_tree_iterator prev = *this;
+      ++*this;
+      return prev;
+    }
+
+    // N.B. see top of the file for explanation of non-constness of
+    // operators * and ->.
+
+    Dwarf_Die &
+    operator* ()
+    {
+      return m_die;
+    }
+
+    Dwarf_Die *
+    operator-> ()
+    {
+      return &**this;
+    }
+
+    // Return a stack of DIE's representing the path from CU DIE to
+    // the current DIE (both ends inclusive).  The first element of
+    // the returned stack is the CU DIE, the last one the current DIE.
+    stack_type
+    stack () const
+    {
+      stack_type ret;
+      for (die_tree_iterator it = *this; it != end (); it = it.parent ())
+	ret.push_back (*it);
+      std::reverse (ret.begin (), ret.end ());
+      return ret;
+    }
+
+    // Return a die_tree_iterator pointing at a parent of a DIE that
+    // this iterator points at.  Returns an end iterator if there is
+    // no parent.
+    die_tree_iterator
+    parent () const
+    {
+      assert (*this != end ());
+      if (m_stack.empty ())
+	return end ();
+
+      die_tree_iterator ret = *this;
+      ret.m_die = elfutils::libdw_impl::dwpp_offdie (m_cuit.m_dw,
+						     m_stack.back ());
+      ret.m_stack.pop_back ();
+      return ret;
+    }
+  };
+
+  // An attribute iterator goes through attributes of a given DIE.
+  class attr_iterator
+    : public std::iterator <std::input_iterator_tag, Dwarf_Attribute>
+  {
+    Dwarf_Die *m_die;
+    Dwarf_Attribute m_at;
+    ptrdiff_t m_offset;
+
+    struct cb_data
+    {
+      // The visited attribute.
+      Dwarf_Attribute *at;
+
+      // Whether this is second pass through the callback.
+      bool been;
+    };
+
+    static int
+    callback (Dwarf_Attribute *at, void *data)
+    {
+      cb_data *d = static_cast <cb_data *> (data);
+      if (d->been)
+	return DWARF_CB_ABORT;
+
+      *d->at = *at;
+      d->been = true;
+
+      // Do a second iteration to find the next offset.
+      return DWARF_CB_OK;
+    }
+
+    void
+    move ()
+    {
+      // If m_offset is already 1, we are done iterating.
+      if (m_offset == 1)
+	{
+	  *this = end ();
+	  return;
+	}
+
+      cb_data data = {&m_at, false};
+      m_offset = dwarf_getattrs (m_die, &callback, &data, m_offset);
+      if (m_offset == -1)
+	elfutils::libdw_impl::throw_libdw ();
+    }
+
+    attr_iterator (ptrdiff_t offset)
+      : m_die (NULL)
+      , m_at ({0})
+      , m_offset (offset)
+    {}
+
+  public:
+    attr_iterator (Dwarf_Die *die)
+      : m_die (die)
+      , m_at ({0})
+      , m_offset (0)
+    {
+      move ();
+    }
+
+    bool
+    operator== (attr_iterator const &other) const
+    {
+      return m_offset == other.m_offset
+	&& m_at.code == other.m_at.code;
+    }
+
+    bool
+    operator!= (attr_iterator const &other) const
+    {
+      return ! (*this == other);
+    }
+
+    attr_iterator &
+    operator++ ()
+    {
+      assert (*this != end ());
+      move ();
+      return *this;
+    }
+
+    attr_iterator
+    operator++ (int)
+    {
+      attr_iterator tmp = *this;
+      ++*this;
+      return tmp;
+    }
+
+    // N.B. see top of the file for explanation of non-constness of
+    // operators * and ->.
+
+    Dwarf_Attribute &
+    operator* ()
+    {
+      return m_at;
+    }
+
+    Dwarf_Attribute *
+    operator-> ()
+    {
+      return &**this;
+    }
+
+    // Return an attr_iterator pointing one after the last actual
+    // attribute.
+    static attr_iterator
+    end ()
+    {
+      return attr_iterator ((ptrdiff_t) 1);
+    }
+  };
+}
+
+inline void
+elfutils::libdw_impl::throw_libdw (int dwerr)
+{
+  if (dwerr == 0)
+    dwerr = dwarf_errno ();
+  assert (dwerr != 0);
+  throw std::runtime_error (dwarf_errmsg (dwerr));
+}
+
+inline bool
+elfutils::libdw_impl::dwpp_child (Dwarf_Die &die, Dwarf_Die &result)
+{
+  int ret = dwarf_child (&die, &result);
+  if (ret < 0)
+    elfutils::libdw_impl::throw_libdw ();
+  return ret == 0;
+}
+
+inline bool
+elfutils::libdw_impl::dwpp_siblingof (Dwarf_Die &die, Dwarf_Die &result)
+{
+  switch (dwarf_siblingof (&die, &result))
+    {
+    case -1:
+      elfutils::libdw_impl::throw_libdw ();
+    case 0:
+      return true;
+    case 1:
+      return false;
+    default:
+      abort ();
+    }
+}
+
+inline Dwarf_Die
+elfutils::libdw_impl::dwpp_offdie (Dwarf *dbg, Dwarf_Off offset)
+{
+  Dwarf_Die result;
+  if (dwarf_offdie (dbg, offset, &result) == NULL)
+    throw_libdw ();
+  return result;
+}
+
+inline Dwarf_Die
+elfutils::libdw_impl::dwpp_offdie_types (Dwarf *dbg, Dwarf_Off offset)
+{
+  Dwarf_Die result;
+  if (dwarf_offdie_types (dbg, offset, &result) == NULL)
+    throw_libdw ();
+  return result;
+}
+
+#endif

@@ -1,5 +1,11 @@
 2015-03-18  Petr Machata  <pmachata@redhat.com>
 
+	* test-iterators.cc, run-test-iterators.sh: New files.
+	* Makefile.am (check_PROGRAMS) [HAVE_CXX]: Add test-iterators.
+	(TESTS) [HAVE_CXX]: Add run-test-iterators.sh.
+
+2015-03-18  Petr Machata  <pmachata@redhat.com>
+
 	* addrcfi.c (op_name): Adjust uses of know-dwarf.h macros to match
 	the API changes.
 	* allregs.c (dwarf_encoding_string): Likewise.
