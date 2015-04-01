@@ -46,4 +46,9 @@ main (int argc, char *argv[])
 
   assert (elfutils::die_tree_iterator (elfutils::unit_iterator::end ())
 	  == elfutils::die_tree_iterator::end ());
+
+  // Just test that we can iterate through the tree.
+  for (elfutils::die_tree_iterator it (dw);
+       it != elfutils::die_tree_iterator::end (); ++it)
+    ;
 }

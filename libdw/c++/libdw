@@ -391,8 +391,10 @@ namespace elfutils
 	  // was a sole, childless CU DIE.
 	  if (! m_stack.empty ())
 	    {
-	      m_die = elfutils::libdw_impl::dwpp_offdie (m_cuit.m_dw,
-							 m_stack.back ());
+	      m_die = (dwarf_tag (&m_cuit->cudie) == DW_TAG_type_unit
+		       ? elfutils::libdw_impl::dwpp_offdie_types
+		       : elfutils::libdw_impl::dwpp_offdie)
+		(m_cuit.m_dw, m_stack.back ());
 	      m_stack.pop_back ();
 	    }
       while (! m_stack.empty ());
@@ -439,17 +441,20 @@ namespace elfutils
 
     // Return a die_tree_iterator pointing at a parent of a DIE that
     // this iterator points at.  Returns an end iterator if there is
-    // no parent.
+    // no parent.  Technically a const, but can't be one due to
+    // dwarf_tag call inside.
     die_tree_iterator
-    parent () const
+    parent ()
     {
       assert (*this != end ());
       if (m_stack.empty ())
 	return end ();
 
       die_tree_iterator ret = *this;
-      ret.m_die = elfutils::libdw_impl::dwpp_offdie (m_cuit.m_dw,
-						     m_stack.back ());
+      ret.m_die = (dwarf_tag (&m_cuit->cudie) == DW_TAG_type_unit
+		   ? elfutils::libdw_impl::dwpp_offdie_types
+		   : elfutils::libdw_impl::dwpp_offdie)
+	(m_cuit.m_dw, m_stack.back ());
       ret.m_stack.pop_back ();
       return ret;
     }
