@@ -39,10 +39,11 @@
 int
 dwarf_getsrcfiles (Dwarf_Die *cudie, Dwarf_Files **files, size_t *nfiles)
 {
-  if (unlikely (cudie == NULL
-		|| (INTUSE(dwarf_tag) (cudie) != DW_TAG_compile_unit
-		    && INTUSE(dwarf_tag) (cudie) != DW_TAG_partial_unit)))
-    return -1;
+  if (cudie == NULL || ! is_cudie (cudie))
+    {
+      __libdw_seterrno (DWARF_E_NOT_CUDIE);
+      return -1;
+    }
 
   int res = -1;
 
