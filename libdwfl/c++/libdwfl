@@ -36,12 +36,6 @@
 
 namespace elfutils
 {
-  // Helper functions.  Not for client consumption.
-  namespace libdwfl_impl
-  {
-    inline void throw_libdwfl (int dwerr = 0);
-  }
-
   // Given a Dwfl, iterates through its Dwfl_Module's.
   //
   // Example usage:
@@ -51,103 +45,28 @@ namespace elfutils
   class dwfl_module_iterator
     : public std::iterator <std::input_iterator_tag, Dwfl_Module *>
   {
-    Dwfl *m_dwfl;
-    ptrdiff_t m_offset;
-    Dwfl_Module *m_module;
+    struct pimpl;
+    pimpl *m_pimpl;
 
-    static int
-    module_cb (Dwfl_Module *mod, void **data, const char *name,
-	       Dwarf_Addr addr, void *arg)
-    {
-      elfutils::dwfl_module_iterator *self
-	= static_cast <elfutils::dwfl_module_iterator *> (arg);
-      self->m_module = mod;
-      return DWARF_CB_ABORT;
-    }
-
-    void
-    move ()
-    {
-      m_offset = dwfl_getmodules (m_dwfl, module_cb, this, m_offset);
-      if (m_offset == -1)
-	elfutils::libdwfl_impl::throw_libdwfl ();
-    }
-
-    explicit dwfl_module_iterator (ptrdiff_t off)
-      : m_dwfl (NULL)
-      , m_offset (off)
-    {}
+    explicit dwfl_module_iterator (ptrdiff_t off);
 
   public:
-    dwfl_module_iterator (Dwfl *dwfl)
-      : m_dwfl (dwfl)
-      , m_offset (0)
-    {
-      move ();
-    }
+    explicit dwfl_module_iterator (Dwfl *dwfl);
+    dwfl_module_iterator (dwfl_module_iterator const &that);
+    ~dwfl_module_iterator ();
+    dwfl_module_iterator &operator= (dwfl_module_iterator const &that);
 
-    dwfl_module_iterator (const dwfl_module_iterator &that)
-      : m_dwfl (that.m_dwfl)
-      , m_offset (that.m_offset)
-      , m_module (that.m_module)
-    {}
+    static dwfl_module_iterator end ();
 
-    static dwfl_module_iterator
-    end ()
-    {
-      return dwfl_module_iterator ((ptrdiff_t) 0);
-    }
+    dwfl_module_iterator &operator++ ();
+    dwfl_module_iterator operator++ (int);
 
-    dwfl_module_iterator &
-    operator++ ()
-    {
-      assert (*this != end ());
-      move ();
-      return *this;
-    }
+    Dwfl_Module &operator* () const;
+    Dwfl_Module *operator-> () const;
 
-    dwfl_module_iterator
-    operator++ (int)
-    {
-      dwfl_module_iterator ret = *this;
-      ++*this;
-      return ret;
-    }
-
-    Dwfl_Module &
-    operator* () const
-    {
-      return *m_module;
-    }
-
-    Dwfl_Module *
-    operator-> () const
-    {
-      return &**this;
-    }
-
-    bool
-    operator== (const dwfl_module_iterator &that) const
-    {
-      assert (m_dwfl == NULL || that.m_dwfl == NULL || m_dwfl == that.m_dwfl);
-      return m_offset == that.m_offset;
-    }
-
-    bool
-    operator!= (const dwfl_module_iterator &that) const
-    {
-      return !(*this == that);
-    }
+    bool operator== (dwfl_module_iterator const &that) const;
+    bool operator!= (dwfl_module_iterator const &that) const;
   };
-}
-
-inline void
-elfutils::libdwfl_impl::throw_libdwfl (int dwerr)
-{
-  if (dwerr == 0)
-    dwerr = dwfl_errno ();
-  assert (dwerr != 0);
-  throw std::runtime_error (dwfl_errmsg (dwerr));
 }
 
 #endif

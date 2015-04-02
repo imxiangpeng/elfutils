@@ -34,8 +34,18 @@ AM_CPPFLAGS += -I$(srcdir) -I$(srcdir)/../libelf -I$(srcdir)/../libebl \
 	   -I$(srcdir)/../libdw -I$(srcdir)/../libdwelf
 VERSION = 1
 
+# For c++/ subdir.
+AUTOMAKE_OPTIONS = subdir-objects
+
 noinst_LIBRARIES = libdwfl.a
+if HAVE_CXX
+noinst_LIBRARIES += libdwflpp.a
+endif
+
 noinst_LIBRARIES += libdwfl_pic.a
+if HAVE_CXX
+noinst_LIBRARIES += libdwflpp_pic.a
+endif
 
 pkginclude_HEADERS = libdwfl.h c++/libdwfl
 
@@ -70,6 +80,10 @@ libdwfl_a_SOURCES = dwfl_begin.c dwfl_end.c dwfl_error.c dwfl_version.c \
 		    dwfl_frame.c frame_unwind.c dwfl_frame_pc.c \
 		    linux-pid-attach.c linux-core-attach.c dwfl_frame_regs.c
 
+if HAVE_CXX
+libdwflpp_a_SOURCES = c++/dwfl_module_iterator.cc
+endif
+
 if ZLIB
 libdwfl_a_SOURCES += gzip.c
 endif
@@ -82,6 +96,10 @@ endif
 
 libdwfl = $(libdw)
 libdw = ../libdw/libdw.so
+if HAVE_CXX
+libdwflpp = $(libdwpp)
+libdwpp = ../libdw/libdwpp.so
+endif
 libelf = ../libelf/libelf.so
 libebl = ../libebl/libebl.a
 libeu = ../lib/libeu.a
@@ -89,6 +107,14 @@ libeu = ../lib/libeu.a
 libdwfl_pic_a_SOURCES =
 am_libdwfl_pic_a_OBJECTS = $(libdwfl_a_SOURCES:.c=.os)
 
-noinst_HEADERS = libdwflP.h
+if HAVE_CXX
+libdwflpp_pic_a_SOURCES =
+am_libdwflpp_pic_a_OBJECTS = $(libdwflpp_a_SOURCES:.cc=.os)
+endif
+
+noinst_HEADERS = libdwflP.h c++/libdwflP.hh
 
 CLEANFILES += $(am_libdwfl_pic_a_OBJECTS)
+if HAVE_CXX
+CLEANFILES += $(am_libdwflpp_pic_a_OBJECTS)
+endif

@@ -23,7 +23,10 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <elfutils/c++/libdw>
+#include "../libdw/c++/libdw"
+#include "../libdwfl/c++/libdwfl"
+#include "../libdw/c++/libdwP.hh"
+#include "../libdwfl/c++/libdwflP.hh"
 
 int
 main (int, char *argv[])
@@ -32,29 +35,53 @@ main (int, char *argv[])
   if (fd < 0)
     throw std::runtime_error (strerror (errno));
 
-  Dwarf *dw = dwarf_begin (fd, DWARF_C_READ);
-  std::vector <std::pair <elfutils::unit_iterator, Dwarf_Die> > cudies;
-  for (elfutils::unit_iterator it (dw); it != elfutils::unit_iterator::end (); ++it)
-    cudies.push_back (std::make_pair (it, it->cudie));
-
-  for (size_t i = 0; i < cudies.size (); ++i)
+  const static Dwfl_Callbacks callbacks =
     {
-      elfutils::unit_iterator jt (dw, cudies[i].second);
-      std::cerr << std::hex << std::showbase
-		<< dwarf_dieoffset (&jt->cudie) << std::endl;
-      for (size_t j = i; jt != elfutils::unit_iterator::end (); ++jt, ++j)
-	assert (jt == cudies[j].first);
+      .find_elf = dwfl_build_id_find_elf,
+      .find_debuginfo = dwfl_standard_find_debuginfo,
+      .section_address = dwfl_offline_section_address,
+      .debuginfo_path = NULL,
+    };
+
+  Dwfl *dwfl = dwfl_begin (&callbacks);
+  if (dwfl == NULL)
+    throw_libdwfl ();
+
+  dwfl_report_begin (dwfl);
+  if (dwfl_report_offline (dwfl, argv[1], argv[1], fd) == NULL)
+    throw_libdwfl ();
+  dwfl_report_end (dwfl, NULL, NULL);
+
+  for (elfutils::dwfl_module_iterator modit (dwfl);
+       modit != elfutils::dwfl_module_iterator::end (); ++modit)
+    {
+      Dwarf_Off bias;
+      Dwarf *dw = dwfl_module_getdwarf (&*modit, &bias);
+      std::vector <std::pair <elfutils::unit_iterator, Dwarf_Die> > cudies;
+      for (elfutils::unit_iterator it (dw); it != elfutils::unit_iterator::end (); ++it)
+	cudies.push_back (std::make_pair (it, it->cudie));
+
+      for (size_t i = 0; i < cudies.size (); ++i)
+	{
+	  elfutils::unit_iterator jt (dw, cudies[i].second);
+	  std::cerr << std::hex << std::showbase
+		    << dwarf_dieoffset (&jt->cudie) << std::endl;
+	  for (size_t j = i; jt != elfutils::unit_iterator::end (); ++jt, ++j)
+	    assert (jt == cudies[j].first);
+	}
+
+      assert (elfutils::die_tree_iterator (elfutils::unit_iterator::end ())
+	      == elfutils::die_tree_iterator::end ());
+
+      for (elfutils::die_tree_iterator it (dw);
+	   it != elfutils::die_tree_iterator::end (); ++it)
+	std::cerr << std::dec
+		  << std::distance (elfutils::child_iterator (*it),
+				    elfutils::child_iterator::end ()) << ' '
+		  << std::distance (elfutils::attr_iterator (&*it),
+				    elfutils::attr_iterator::end ())
+		  << std::endl;
     }
 
-  assert (elfutils::die_tree_iterator (elfutils::unit_iterator::end ())
-	  == elfutils::die_tree_iterator::end ());
-
-  for (elfutils::die_tree_iterator it (dw);
-       it != elfutils::die_tree_iterator::end (); ++it)
-    std::cerr << std::dec
-	      << std::distance (elfutils::child_iterator (*it),
-				elfutils::child_iterator::end ()) << ' '
-	      << std::distance (elfutils::attr_iterator (&*it),
-				elfutils::attr_iterator::end ())
-	      << std::endl;
+  dwfl_end (dwfl);
 }

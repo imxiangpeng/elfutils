@@ -159,6 +159,41 @@ ELFUTILS_0.162 {
     _ZNK8elfutils13attr_iteratorneERKS0_;
 
 
+    # ### elfutils::dwfl_module_iterator ###
+
+    # dwfl_module_iterator(Dwfl*)
+    _ZN8elfutils20dwfl_module_iteratorC1EP4Dwfl;
+
+    # dwfl_module_iterator(elfutils::dwfl_module_iterator const&)
+    _ZN8elfutils20dwfl_module_iteratorC1ERKS0_;
+
+    # ~dwfl_module_iterator()
+    _ZN8elfutils20dwfl_module_iteratorD1Ev;
+
+    # operator=(elfutils::dwfl_module_iterator const&)
+    _ZN8elfutils20dwfl_module_iteratoraSERKS0_;
+
+    # end()
+    _ZN8elfutils20dwfl_module_iterator3endEv;
+
+    # operator++()
+    _ZN8elfutils20dwfl_module_iteratorppEv;
+
+    # operator++(int)
+    _ZN8elfutils20dwfl_module_iteratorppEi;
+
+    # operator*() const
+    _ZNK8elfutils20dwfl_module_iteratordeEv;
+
+    # operator->() const
+    _ZNK8elfutils20dwfl_module_iteratorptEv;
+
+    # operator==(elfutils::dwfl_module_iterator const&) const
+    _ZNK8elfutils20dwfl_module_iteratoreqERKS0_;
+
+    # operator!=(elfutils::dwfl_module_iterator const&) const
+    _ZNK8elfutils20dwfl_module_iteratorneERKS0_;
+
   local:
     *;
 } ELFUTILS_0;

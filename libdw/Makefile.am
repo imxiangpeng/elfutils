@@ -139,7 +139,8 @@ libdw.so$(EXEEXT): $(srcdir)/libdw.map libdw_pic.a ../libdwelf/libdwelf_pic.a \
 
 if HAVE_CXX
 libdwpp_so_SOURCES =
-libdwpp.so$(EXEEXT): $(srcdir)/libdwpp.map libdwpp_pic.a libdw.so$(EXEEXT)
+libdwpp.so$(EXEEXT): $(srcdir)/libdwpp.map libdwpp_pic.a ../libdwfl/libdwflpp_pic.a \
+		     libdw.so$(EXEEXT)
 	$(CXXLINK) -shared -o $@ -Wl,--soname,$@.$(VERSION),-z,defs \
 		-Wl,--enable-new-dtags \
 		-Wl,--version-script,$<,--no-undefined \
