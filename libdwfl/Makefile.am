@@ -47,7 +47,10 @@ if HAVE_CXX
 noinst_LIBRARIES += libdwflpp_pic.a
 endif
 
-pkginclude_HEADERS = libdwfl.h c++/libdwfl
+pkginclude_HEADERS = libdwfl.h
+if HAVE_CXX
+pkginclude_HEADERS += c++/libdwfl
+endif
 
 libdwfl_a_SOURCES = dwfl_begin.c dwfl_end.c dwfl_error.c dwfl_version.c \
 		    dwfl_module.c dwfl_report_elf.c relocate.c \

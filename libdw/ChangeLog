@@ -17,7 +17,7 @@
 	* Makefile.am (AUTOMAKE_OPTIONS): New variable.
 	[HAVE_CXX] (lib_LIBRARIES): Add libdwpp.a.
 	[HAVE_CXX] (noinst_LIBRARIES): Add libdwpp_pic.a.
-	(pkginclude_HEADERS): Add c++/libdw.
+	[HAVE_CXX] (pkginclude_HEADERS): Add c++/libdw.
 	[HAVE_CXX] (libdwpp_a_SOURCES, libdwpp_so_SOURCES): New variables.
 	[HAVE_CXX] (libdwpp_pic_a_SOURCES, am_libdwpp_pic_a_OBJECTS): Likewise.
 	[HAVE_CXX] (libdwpp.so$(EXEEXT)): New rule.

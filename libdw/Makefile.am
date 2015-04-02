@@ -50,7 +50,10 @@ endif
 noinst_PROGRAMS = $(noinst_LIBRARIES:_pic.a=.so)
 
 include_HEADERS = dwarf.h
-pkginclude_HEADERS = libdw.h known-dwarf.h c++/libdw
+pkginclude_HEADERS = libdw.h known-dwarf.h
+if HAVE_CXX
+pkginclude_HEADERS += c++/libdw
+endif
 
 libdw_a_SOURCES = dwarf_begin.c dwarf_begin_elf.c dwarf_end.c dwarf_getelf.c \
 		  dwarf_getpubnames.c dwarf_getabbrev.c dwarf_tag.c \

@@ -3,6 +3,7 @@
 	* c++: New directory.
 	* c++/libdwfl, c++/libdwflP.hh: New header files.
 	* Makefile.am (AUTOMAKE_OPTIONS): New variable.
+	[HAVE_CXX] (pkginclude_HEADERS): Add c++/libdwfl.
 	[HAVE_CXX] (noinst_LIBRARIES): Add libdwflpp.a, libdwflpp_pic.a.
 	[HAVE_CXX] (libdwflpp_a_SOURCES, libdwflpp, libdwpp): New variables.
 	[HAVE_CXX] (libdwflpp_pic_a_SOURCES): Likewise.
