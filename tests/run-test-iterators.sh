@@ -20,16 +20,33 @@
 testfiles testfile39 testfile-debug-types
 
 testrun_compare ${abs_top_builddir}/tests/test-iterators testfile39 <<\EOF
-0
-0x93
-0x12a
-0x1bd
+0xb
+0x9e
+0x135
+0x1c8
+0 7
+0 7
+0 7
+0 7
 EOF
 
 testrun_compare ${abs_top_builddir}/tests/test-iterators testfile-debug-types <<\EOF
-0
-0
-0x43
+0xb
+0x17
+0x5a
+4 6
+0 9
+0 3
+0 6
+0 6
+2 3
+1 4
+0 2
+0 5
+1 3
+2 4
+0 3
+0 5
 EOF
 
 exit 0

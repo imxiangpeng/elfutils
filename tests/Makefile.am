@@ -335,16 +335,19 @@ endif !STANDALONE
 
 if STANDALONE
 libdw = -ldw
+libdwpp = -ldwpp
 libelf = -lelf
 libasm = -lasm
 libebl = -lebl
 else !STANDALONE
 if BUILD_STATIC
 libdw = ../libdw/libdw.a $(zip_LIBS) $(libelf) $(libebl) -ldl
+libdwpp = ../libdw/libdwpp.a $(libdw)
 libelf = ../libelf/libelf.a
 libasm = ../libasm/libasm.a
 else
 libdw = ../libdw/libdw.so
+libdwpp = ../libdw/libdwpp.so
 libelf = ../libelf/libelf.so
 libasm = ../libasm/libasm.so
 endif
@@ -437,7 +440,7 @@ strptr_LDADD = $(libelf)
 newdata_LDADD = $(libelf)
 elfstrtab_LDADD = $(libelf)
 test_iterators_SOURCES = test-iterators.cc
-test_iterators_LDADD = $(libdw) $(libelf)
+test_iterators_LDADD = $(libdw) $(libdwpp)
 
 if GCOV
 check: check-am coverage

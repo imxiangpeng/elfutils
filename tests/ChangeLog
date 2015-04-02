@@ -3,6 +3,7 @@
 	* test-iterators.cc, run-test-iterators.sh: New files.
 	* Makefile.am (check_PROGRAMS) [HAVE_CXX]: Add test-iterators.
 	(TESTS) [HAVE_CXX]: Add run-test-iterators.sh.
+	(libdwpp): New variable.
 
 2015-03-18  Petr Machata  <pmachata@redhat.com>
 

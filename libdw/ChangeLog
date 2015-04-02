@@ -10,8 +10,11 @@
 2015-03-17  Petr Machata  <pmachata@redhat.com>
 
 	* c++: New directory.
-	* c++/libdw: New header file.
-	* Makefile.am: Install it.
+	* c++/libdw, c++/libdwP.hh: New header files.
+	* Makefile.am: Install c++/libdw.
+	* c++/attr_iterator.cc, c++/child_iterator.cc: New files.
+	* c++/die_tree_iterator.cc, c++/unit_iterator.cc: Likewise.
+	* libdwpp.map: New version script file.
 
 2015-03-18  Petr Machata  <pmachata@redhat.com>
 

@@ -34,8 +34,11 @@ endif
 AM_CPPFLAGS += -I$(srcdir)/../libelf
 VERSION = 1
 
-lib_LIBRARIES = libdw.a
-noinst_LIBRARIES = libdw_pic.a
+# For c++/ subdir.
+AUTOMAKE_OPTIONS = subdir-objects
+
+lib_LIBRARIES = libdw.a libdwpp.a
+noinst_LIBRARIES = libdw_pic.a libdwpp_pic.a
 noinst_PROGRAMS = $(noinst_LIBRARIES:_pic.a=.so)
 
 include_HEADERS = dwarf.h
@@ -91,6 +94,9 @@ libdw_a_SOURCES = dwarf_begin.c dwarf_begin_elf.c dwarf_end.c dwarf_getelf.c \
 		  dwarf_getalt.c dwarf_setalt.c dwarf_cu_getdwarf.c \
 		  dwarf_cu_die.c dwarf_peel_type.c
 
+libdwpp_a_SOURCES = c++/unit_iterator.cc c++/die_tree_iterator.cc	\
+		    c++/child_iterator.cc c++/attr_iterator.cc
+
 if MAINTAINER_MODE
 BUILT_SOURCES = $(srcdir)/known-dwarf.h
 MAINTAINERCLEANFILES = $(srcdir)/known-dwarf.h
@@ -101,6 +107,9 @@ endif
 
 libdw_pic_a_SOURCES =
 am_libdw_pic_a_OBJECTS = $(libdw_a_SOURCES:.c=.os)
+
+libdwpp_pic_a_SOURCES =
+am_libdwpp_pic_a_OBJECTS = $(libdwpp_a_SOURCES:.cc=.os)
 
 libdw_so_SOURCES =
 libdw.so$(EXEEXT): $(srcdir)/libdw.map libdw_pic.a ../libdwelf/libdwelf_pic.a \
@@ -116,16 +125,32 @@ libdw.so$(EXEEXT): $(srcdir)/libdw.map libdw_pic.a ../libdwelf/libdwelf_pic.a \
 	@$(textrel_check)
 	ln -fs $@ $@.$(VERSION)
 
-install: install-am libdw.so
+libdwpp_so_SOURCES =
+libdwpp.so$(EXEEXT): $(srcdir)/libdwpp.map libdwpp_pic.a libdw.so$(EXEEXT)
+	$(CXXLINK) -shared -o $@ -Wl,--soname,$@.$(VERSION),-z,defs \
+		-Wl,--enable-new-dtags \
+		-Wl,--version-script,$<,--no-undefined \
+		-Wl,--whole-archive $(filter-out $<,$^) -Wl,--no-whole-archive\
+		libdw.so$(EXEEXT)
+	@$(textrel_check)
+	ln -fs $@ $@.$(VERSION)
+
+install: install-am libdw.so libdwpp.so
 	$(mkinstalldirs) $(DESTDIR)$(libdir)
 	$(INSTALL_PROGRAM) libdw.so $(DESTDIR)$(libdir)/libdw-$(PACKAGE_VERSION).so
 	ln -fs libdw-$(PACKAGE_VERSION).so $(DESTDIR)$(libdir)/libdw.so.$(VERSION)
 	ln -fs libdw.so.$(VERSION) $(DESTDIR)$(libdir)/libdw.so
+	$(INSTALL_PROGRAM) libdwpp.so $(DESTDIR)$(libdir)/libdwpp-$(PACKAGE_VERSION).so
+	ln -fs libdwpp-$(PACKAGE_VERSION).so $(DESTDIR)$(libdir)/libdwpp.so.$(VERSION)
+	ln -fs libdwpp.so.$(VERSION) $(DESTDIR)$(libdir)/libdwpp.so
 
 uninstall: uninstall-am
 	rm -f $(DESTDIR)$(libdir)/libdw-$(PACKAGE_VERSION).so
 	rm -f $(DESTDIR)$(libdir)/libdw.so.$(VERSION)
 	rm -f $(DESTDIR)$(libdir)/libdw.so
+	rm -f $(DESTDIR)$(libdir)/libdwpp-$(PACKAGE_VERSION).so
+	rm -f $(DESTDIR)$(libdir)/libdwpp.so.$(VERSION)
+	rm -f $(DESTDIR)$(libdir)/libdwpp.so
 	rmdir --ignore-fail-on-non-empty $(DESTDIR)$(includedir)/elfutils
 
 libdwfl_objects = $(shell $(AR) t ../libdwfl/libdwfl.a)
@@ -137,6 +162,7 @@ libdw_a_LIBADD += $(addprefix ../libdwelf/,$(libdwelf_objects))
 noinst_HEADERS = libdwP.h memory-access.h dwarf_abbrev_hash.h \
 		 dwarf_sig8_hash.h cfi.h encoded-value.h
 
-EXTRA_DIST = libdw.map
+EXTRA_DIST = libdw.map libdwpp.map
 
-MOSTLYCLEANFILES = $(am_libdw_pic_a_OBJECTS) libdw.so.$(VERSION)
+MOSTLYCLEANFILES = $(am_libdw_pic_a_OBJECTS) libdw.so.$(VERSION) \
+	$(am_libdwpp_pic_a_OBJECTS) libdwpp.so.$(VERSION)

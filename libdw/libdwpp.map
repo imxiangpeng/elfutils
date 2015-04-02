@@ -1,0 +1,164 @@
+ELFUTILS_0 { };
+
+ELFUTILS_0.162 {
+  global:
+
+    # ### elfutils::die_tree_iterator ###
+
+    # die_tree_iterator(Dwarf*)
+    _ZN8elfutils17die_tree_iteratorC1EP5Dwarf;
+
+    # die_tree_iterator(elfutils::die_tree_iterator const&)
+    _ZN8elfutils17die_tree_iteratorC1ERKS0_;
+
+    # die_tree_iterator(elfutils::unit_iterator const&)
+    _ZN8elfutils17die_tree_iteratorC1ERKNS_13unit_iteratorE;
+
+    # ~die_tree_iterator()
+    _ZN8elfutils17die_tree_iteratorD1Ev;
+
+    # operator=(elfutils::die_tree_iterator const&)
+    _ZN8elfutils17die_tree_iteratoraSERKS0_;
+
+    # parent()
+    _ZN8elfutils17die_tree_iterator6parentEv;
+
+    # stack() const
+    _ZNK8elfutils17die_tree_iterator5stackEv;
+
+    # end()
+    _ZN8elfutils17die_tree_iterator3endEv;
+
+    # operator->()
+    _ZN8elfutils17die_tree_iteratorptEv;
+
+    # operator*()
+    _ZN8elfutils17die_tree_iteratordeEv;
+
+    # operator++()
+    _ZN8elfutils17die_tree_iteratorppEv;
+
+    # operator++(int)
+    _ZN8elfutils17die_tree_iteratorppEi;
+
+    # operator==(elfutils::die_tree_iterator const&) const
+    _ZNK8elfutils17die_tree_iteratoreqERKS0_;
+
+    # operator!=(elfutils::die_tree_iterator const&) const
+    _ZNK8elfutils17die_tree_iteratorneERKS0_;
+
+
+    # ### elfutils::unit_iterator ###
+
+    # unit_iterator(Dwarf*)
+    _ZN8elfutils13unit_iteratorC1EP5Dwarf;
+
+    # unit_iterator(Dwarf*, Dwarf_Die)
+    _ZN8elfutils13unit_iteratorC1EP5Dwarf9Dwarf_Die;
+
+    # unit_iterator(elfutils::unit_iterator const&)
+    _ZN8elfutils13unit_iteratorC1ERKS0_;
+
+    # ~unit_iterator()
+    _ZN8elfutils13unit_iteratorD1Ev;
+
+    # operator=(elfutils::unit_iterator const&)
+    _ZN8elfutils13unit_iteratoraSERKS0_;
+
+    # end()
+    _ZN8elfutils13unit_iterator3endEv;
+
+    # operator->()
+    _ZN8elfutils13unit_iteratorptEv;
+
+    # operator*()
+    _ZN8elfutils13unit_iteratordeEv;
+
+    # operator++()
+    _ZN8elfutils13unit_iteratorppEv;
+
+    # operator++(int)
+    _ZN8elfutils13unit_iteratorppEi;
+
+    # operator==(elfutils::unit_iterator const&) const
+    _ZNK8elfutils13unit_iteratoreqERKS0_;
+
+    # operator!=(elfutils::unit_iterator const&) const
+    _ZNK8elfutils13unit_iteratorneERKS0_;
+
+
+    # ### elfutils::child_iterator ###
+
+    # child_iterator(elfutils::child_iterator const&)
+    _ZN8elfutils14child_iteratorC1ERKS0_;
+
+    # child_iterator(Dwarf_Die)
+    _ZN8elfutils14child_iteratorC1E9Dwarf_Die;
+
+    # ~child_iterator()
+    _ZN8elfutils14child_iteratorD1Ev;
+
+    # operator=(elfutils::child_iterator const&)
+    _ZN8elfutils14child_iteratoraSERKS0_;
+
+    # end()
+    _ZN8elfutils14child_iterator3endEv;
+
+    # operator==(elfutils::child_iterator const&) const
+    _ZNK8elfutils14child_iteratoreqERKS0_;
+
+    # operator!=(elfutils::child_iterator const&) const
+    _ZNK8elfutils14child_iteratorneERKS0_;
+
+    # operator*()
+    _ZN8elfutils14child_iteratordeEv;
+
+    # operator->()
+    _ZN8elfutils14child_iteratorptEv;
+
+    # operator++()
+    _ZN8elfutils14child_iteratorppEv;
+
+    # operator++(int)
+    _ZN8elfutils14child_iteratorppEi;
+
+
+    # ### elfutils::attr_iterator ###
+
+    # attr_iterator(Dwarf_Die*)
+    _ZN8elfutils13attr_iteratorC1EP9Dwarf_Die;
+
+    # attr_iterator(elfutils::attr_iterator const&)
+    _ZN8elfutils13attr_iteratorC1ERKS0_;
+
+    # ~attr_iterator()
+    _ZN8elfutils13attr_iteratorD1Ev;
+
+    # operator=(elfutils::attr_iterator const&)
+    _ZN8elfutils13attr_iteratoraSERKS0_;
+
+    # end()
+    _ZN8elfutils13attr_iterator3endEv;
+
+    # operator++()
+    _ZN8elfutils13attr_iteratorppEv;
+
+    # operator++(int)
+    _ZN8elfutils13attr_iteratorppEi;
+
+    # operator*()
+    _ZN8elfutils13attr_iteratordeEv;
+
+    # operator->()
+    _ZN8elfutils13attr_iteratorptEv;
+
+    # operator==(elfutils::attr_iterator const&) const
+    _ZNK8elfutils13attr_iteratoreqERKS0_;
+
+    # operator!=(elfutils::attr_iterator const&) const
+    _ZNK8elfutils13attr_iteratorneERKS0_;
+
+
+  local:
+    *;
+} ELFUTILS_0;

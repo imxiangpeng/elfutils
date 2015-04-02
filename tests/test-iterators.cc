@@ -21,11 +21,12 @@
 #include <errno.h>
 #include <iostream>
 #include <cassert>
+#include <stdexcept>
 
 #include <elfutils/c++/libdw>
 
 int
-main (int argc, char *argv[])
+main (int, char *argv[])
 {
   int fd = open (argv[1], O_RDONLY);
   if (fd < 0)
@@ -39,7 +40,8 @@ main (int argc, char *argv[])
   for (size_t i = 0; i < cudies.size (); ++i)
     {
       elfutils::unit_iterator jt (dw, cudies[i].second);
-      std::cerr << std::hex << std::showbase << jt.offset () << std::endl;
+      std::cerr << std::hex << std::showbase
+		<< dwarf_dieoffset (&jt->cudie) << std::endl;
       for (size_t j = i; jt != elfutils::unit_iterator::end (); ++jt, ++j)
 	assert (jt == cudies[j].first);
     }
@@ -47,8 +49,12 @@ main (int argc, char *argv[])
   assert (elfutils::die_tree_iterator (elfutils::unit_iterator::end ())
 	  == elfutils::die_tree_iterator::end ());
 
-  // Just test that we can iterate through the tree.
   for (elfutils::die_tree_iterator it (dw);
        it != elfutils::die_tree_iterator::end (); ++it)
-    ;
+    std::cerr << std::dec
+	      << std::distance (elfutils::child_iterator (*it),
+				elfutils::child_iterator::end ()) << ' '
+	      << std::distance (elfutils::attr_iterator (&*it),
+				elfutils::attr_iterator::end ())
+	      << std::endl;
 }
