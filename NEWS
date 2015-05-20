@@ -3,6 +3,7 @@ Version 0.162
 libdw: Install new header elfutils/known-dwarf.h.
 
 addr2line: New option -a, --addresses to print address before each entry.
+           New option -C, --demangle to show demangled symbols.
 
 Version 0.161
 
