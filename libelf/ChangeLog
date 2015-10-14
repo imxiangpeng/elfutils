@@ -1,3 +1,8 @@
+2015-10-14  Mark Wielaard  <mjw@redhat.com>
+
+	* elf.h: Update from glibc. Add section compression constants and
+	structures.
+
 2015-10-05  Mark Wielaard  <mjw@redhat.com>
 
 	* elf_update.c (write_file): Only use posix_fallocate when using
