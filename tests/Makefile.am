@@ -114,6 +114,7 @@ TESTS = run-arextract.sh run-arsymtest.sh newfile test-nlist \
 	run-backtrace-native-biarch.sh run-backtrace-native-core.sh \
 	run-backtrace-native-core-biarch.sh run-backtrace-core-x86_64.sh \
 	run-backtrace-fp-core-x86_64.sh \
+	run-backtrace-fp-core-arm.sh \
 	run-backtrace-core-x32.sh \
 	run-backtrace-core-i386.sh run-backtrace-core-ppc.sh \
 	run-backtrace-core-s390x.sh run-backtrace-core-s390.sh \
@@ -293,6 +294,8 @@ EXTRA_DIST = run-arextract.sh run-arsymtest.sh \
 	     run-backtrace-core-x86_64.sh run-backtrace-core-i386.sh \
 	     run-backtrace-fp-core-x86_64.sh \
 	     run-backtrace-core-x32.sh \
+	     run-backtrace-fp-core-arm.sh \
+	     backtrace.arm.fp.core.bz2 backtrace.arm.fp.exec.bz2 \
 	     backtrace-subr.sh backtrace.i386.core.bz2 backtrace.i386.exec.bz2 \
 	     backtrace.x86_64.core.bz2 backtrace.x86_64.exec.bz2 \
 	     backtrace.x86_64.fp.core.bz2 backtrace.x86_64.fp.exec.bz2 \
